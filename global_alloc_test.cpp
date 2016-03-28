@@ -1,15 +1,9 @@
-#include "Memory_pool.h"
-
 #include <iostream>
 #include <string>
-#include <cassert>
 
 using namespace std;
 
-#define NDEBUG
-
 struct Record {
-public:
 	const string name;
 	const string phone_no;
 	int age;
@@ -17,16 +11,6 @@ public:
 	// Initialize the Record.
 	Record(const string &name_, const string &phone_no_, int age_)
 		: name(name_), phone_no(phone_no_), age(age_) {}
-
-	// Overloaded memory operators.
-	void *operator new(size_t size)
-		{ assert(size); return allocator.alloc(); }
-	void operator delete(void *returned, size_t size)
-		{ allocator.free(reinterpret_cast<Record *>(returned)); }
-
-private:
-	// Memory allocator for the Record class.
-	static Memory_pool<Record> allocator;
 
 };
 
@@ -39,12 +23,8 @@ ostream &operator<<(ostream &os, Record &rec)
 	return os;
 }
 
-// Initialize the allocator.
-Memory_pool<Record> Record::allocator = Memory_pool<Record>();
-
 int main()
 {
-	// Use up a bunch of memory over and over again.
 	for (int i = 0; i < 5000; i++) {
 		Record *records[2000];
 		for (int j = 0; j < 2000; j++) {

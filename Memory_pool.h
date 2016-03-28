@@ -13,6 +13,11 @@
 // Wade Bonkowski - 3-37-2016
 //
 
+#include <cstdlib>
+
+// Amount to expand the free list by if it is empty.
+const size_t EXPANSION_SIZE = 1000;
+
 //
 // Templated fixed-size pool memory allocator.
 //
@@ -37,9 +42,6 @@ private:
 	//       as part of an object of this class.
 	Memory_pool<T> *next;
 
-	// Amount to expand the free list by if it is empty.
-	const size_t EXPANSION_SIZE = 1000;
-
 	// Expand the free list by the specified amount.
 	void expand_free_list(size_t amount = EXPANSION_SIZE);
 
@@ -63,7 +65,8 @@ Memory_pool<T>::~Memory_pool()
 {
 	for (Memory_pool<T> *ptr = next; ptr != nullptr; ptr = next) {
 		next = next->next;
-		delete [] ptr;
+		// Cast back so destructors aren't called.
+		delete[] reinterpret_cast<char *>(ptr);
 	}
 }
 
@@ -80,7 +83,7 @@ T *Memory_pool<T>::alloc()
 	Memory_pool<T> *ptr = next;
 	next = next->next;
 
-	return static_cast<T*>(ptr);
+	return reinterpret_cast<T*>(ptr);
 }
 
 //
@@ -89,7 +92,7 @@ T *Memory_pool<T>::alloc()
 template <typename T>
 void Memory_pool<T>::free(T *elem)
 {
-	Memory_pool<T> *returned = static_cast<Memory_pool<T> *>(elem);
+	Memory_pool<T> *returned = reinterpret_cast<Memory_pool<T> *>(elem);
 	returned->next = next;
 	next = returned;
 }
@@ -106,10 +109,10 @@ void Memory_pool<T>::expand_free_list(size_t amount)
 			sizeof(T) : sizeof(Memory_pool<T> *);
 
 	// Create the amount of pieces needed and add them to the free list.
-	Memory_pool<T> *runner = static_cast<Memory_pool<T> *>(new char[size]);
+	Memory_pool<T> *runner = reinterpret_cast<Memory_pool<T> *>(new char[size]);
 	next = runner;
-	for (int i = 0; i < amount; i++) {
-		runner->next = static_cast<Memory_pool<T> *>(new char[size]);
+	for (size_t i = 0; i < amount; i++) {
+		runner->next = reinterpret_cast<Memory_pool<T> *>(new char[size]);
 		runner = runner->next;
 	}
 
